@@ -1,5 +1,6 @@
-// A pen-down route through every contour. New ink only crosses the shortest
-// gaps between components; travel between branches follows existing ink.
+// One Euler trail: every edge is used exactly once. Odd junctions are paired
+// with NEW ink connections, never with copies of already drawn edges.
+import { InkIndex, makeConnector, samplePath, uniqueSegments, cleanJunctions } from './pen-geometry.js?v=0.3.0';
 const distance = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
 const cache = new WeakMap();
 
@@ -40,16 +41,19 @@ function buildGraph(trace) {
     if (byPoint.has(key)) return byPoint.get(key);
     const id = points.length; byPoint.set(key, id); points.push(p.slice()); adjacent.push([]); return id;
   }
+  const ink = new InkIndex();
   function edge(a, b, bridge = false) {
     if (a === b) return;
     const key = a < b ? `${a}:${b}` : `${b}:${a}`;
     if (byEdge.has(key)) return;
     byEdge.add(key); const id = edges.length;
-    edges.push({ a, b, length: distance(points[a], points[b]), bridge }); adjacent[a].push(id); adjacent[b].push(id);
+    const geometry = bridge ? makeConnector(points[a],points[b],ink,trace.width,trace.height).points : [points[a],points[b]];
+    edges.push({ a, b, length: geometry.slice(1).reduce((n,p,i)=>n+distance(geometry[i],p),0), bridge, geometry }); adjacent[a].push(id); adjacent[b].push(id);ink.addPath(geometry);
   }
   // Sampling also lets a disconnected endpoint attach close to the middle of
   // another contour, rather than drawing a long diagonal to its far endpoint.
-  for (const path of trace.paths) {
+  const cleaned=cleanJunctions(uniqueSegments(trace.paths));
+  for (const path of uniqueSegments(cleaned.segments)) {
     let previous = vertex(path[0]);
     for (let i = 1; i < path.length; i++) {
       const a = path[i - 1], b = path[i], steps = Math.max(1, Math.ceil(distance(a, b) / 2.5));
@@ -73,61 +77,54 @@ function buildGraph(trace) {
     for (const e of [...candidates.values()].sort((a, b) => a.d - b.d || a.a - b.a)) if (union.join(e.a, e.b)) edge(e.a, e.b, true);
   }
   const bridges = edges.filter(e => e.bridge);
-  return { points, edges, adjacent, stats: { components, bridgeCount: bridges.length, bridgeLength: bridges.reduce((n, e) => n + e.length, 0), maxBridge: Math.max(0, ...bridges.map(e => e.length)), originalLength: edges.filter(e => !e.bridge).reduce((n, e) => n + e.length, 0) } };
+  return { points, edges, adjacent, width:trace.width, height:trace.height, stats: { simplifiedJunctions:cleaned.merged,prunedLength:cleaned.prunedLength,components, bridgeCount: bridges.length, bridgeLength: bridges.reduce((n, e) => n + e.length, 0), maxBridge: Math.max(0, ...bridges.map(e => e.length)), originalLength: edges.filter(e => !e.bridge).reduce((n, e) => n + e.length, 0) } };
 }
 
-class MinHeap {
-  constructor() { this.items = []; }
-  push(item) { const a = this.items; let i = a.length; a.push(item); while (i) { const p = (i - 1) >> 1; if (a[p][0] <= item[0]) break; a[i] = a[p]; i = p; } a[i] = item; }
-  pop() { const a = this.items, first = a[0], last = a.pop(); if (a.length) { let i = 0; while (i * 2 + 1 < a.length) { let c = i * 2 + 1; if (c + 1 < a.length && a[c + 1][0] < a[c][0]) c++; if (a[c][0] >= last[0]) break; a[i] = a[c]; i = c; } a[i] = last; } return first; }
-}
 function walk(graph, start, bounds) {
-  const { points, edges, adjacent } = graph;
+  const { points } = graph, edges=graph.edges.slice(), adjacent=graph.adjacent.map(a=>a.slice());
   const rank = p => start === 'left' ? (p[0] - bounds.x) / bounds.w : start === 'top' ? (p[1] - bounds.y) / bounds.h : 1 - (p[1] - bounds.y) / bounds.h;
   const odd = points.map((_, i) => i).filter(i => adjacent[i].length % 2);
   const candidates = odd.length ? odd : points.map((_, i) => i).filter(i => adjacent[i].length);
   const origin = candidates.reduce((a, b) => rank(points[b]) < rank(points[a]) ? b : a);
-  const count = new Uint32Array(edges.length).fill(1), available = new Uint8Array(points.length);
-  const costs = new Float64Array(points.length), parent = new Int32Array(points.length), seen = new Uint32Array(points.length); let generation = 0;
+  const ink=new InkIndex();for(const e of edges)ink.addPath(e.geometry);
+  let connectionLength=0,connections=0;
+  if (odd.length>2) {
+    const end=odd.filter(id=>id!==origin).reduce((a,b)=>rank(points[b])>rank(points[a])?b:a);
+    const pending=odd.filter(id=>id!==origin&&id!==end).sort((a,b)=>rank(points[a])-rank(points[b])||a-b),pairs=[];
+    while(pending.length){const a=pending.shift();let best=0;for(let i=1;i<pending.length;i++)if(distance(points[a],points[pending[i]])<distance(points[a],points[pending[best]]))best=i;pairs.push([a,pending.splice(best,1)[0]]);}
+    // Uncross nearby pairings when doing so shortens the new ink. No graph
+    // path is duplicated, even when two paired vertices are already adjacent.
+    for(let pass=0;pass<2;pass++)for(let i=0;i<pairs.length;i++)for(let j=i+1;j<Math.min(pairs.length,i+80);j++){
+      const[a,b]=pairs[i],[c,d]=pairs[j],old=distance(points[a],points[b])+distance(points[c],points[d]),ac=distance(points[a],points[c])+distance(points[b],points[d]),ad=distance(points[a],points[d])+distance(points[b],points[c]);
+      if(Math.min(ac,ad)<old-1e-6){pairs[i]=[a,ac<ad?c:d];pairs[j]=[b,ac<ad?d:c];}
+    }
+    for(const[a,b]of pairs){const path=makeConnector(points[a],points[b],ink,graph.width,graph.height),id=edges.length;edges.push({a,b,length:path.length,bridge:true,geometry:path.points});adjacent[a].push(id);adjacent[b].push(id);ink.addPath(path.points);connectionLength+=path.length;connections++;}
+  }
   const other = (id, at) => edges[id].a === at ? edges[id].b : edges[id].a;
-  function search(from, stopAtOdd) {
-    generation++; const heap = new MinHeap(); heap.push([0, from]); seen[from] = generation; costs[from] = 0;
-    while (heap.items.length) {
-      const [cost, at] = heap.pop(); if (cost > costs[at]) continue;
-      if (stopAtOdd && available[at] && at !== from) return at;
-      for (const id of adjacent[at]) { const next = other(id, at), value = cost + edges[id].length; if (seen[next] !== generation || value < costs[next]) { seen[next] = generation; costs[next] = value; parent[next] = id; heap.push([value, next]); } }
-    }
-    return -1;
+  // Single-use flags are the invariant. There is no multiplicity counter,
+  // duplicated-edge list, pen-up travel, or fallback to retracing.
+  const used=new Uint8Array(edges.length),stack=[{at:origin,via:-1}],reversed=[];
+  while(stack.length){
+    const frame=stack.at(-1),at=frame.at,p=points[at],choices=adjacent[at].filter(id=>!used[id]);
+    if(!choices.length){reversed.push(stack.pop());continue;}
+    let before=null;
+    if(frame.via>=0){const previous=edges[frame.via],g=previous.geometry;before=previous.b===at?g[g.length-2]:g[1];}
+    const score=id=>{const e=edges[id],g=e.geometry,q=e.a===at?g[1]:g[g.length-2];let turn=0;if(before)turn=1-((p[0]-before[0])*(q[0]-p[0])+(p[1]-before[1])*(q[1]-p[1]))/(distance(before,p)*distance(p,q)||1);return turn+rank(points[other(id,at)])*.18+(e.bridge?.08:0);};
+    const id=choices.reduce((a,b)=>score(b)<score(a)?b:a);used[id]=1;stack.push({at:other(id,at),via:id});
   }
-  // Leave two odd vertices open as the beginning/end. Pair the others by
-  // shortest graph paths. This reuses ink without retracing every branch twice.
-  let retraceLength = 0;
-  if (odd.length) {
-    for (const id of odd) available[id] = 1;
-    search(origin, false);
-    const end = odd.filter(id => id !== origin).reduce((a, b) => costs[b] > costs[a] ? b : a);
-    available[origin] = available[end] = 0;
-    for (const from of [...odd].sort((a,b) => rank(points[a])-rank(points[b]) || a-b)) if (available[from]) {
-      let target = search(from, true);
-      if (target < 0) throw new Error('연속 경로를 완성하지 못했습니다. 선을 다시 추출해 주세요.');
-      available[from] = available[target] = 0;
-      while (target !== from) { const id = parent[target]; count[id]++; retraceLength += edges[id].length; target = other(id, target); }
-    }
+  const order=reversed.reverse(),route=[points[origin]],edgeIds=[],visits=new Uint8Array(edges.length);
+  for(let i=1;i<order.length;i++){
+    const id=order[i].via,e=edges[id],from=order[i-1].at,to=order[i].at;
+    if(!e||other(id,from)!==to||visits[id]++)throw new Error('중복 없는 한붓 경로 검사에 실패했습니다.');
+    const geometry=e.a===from?e.geometry:[...e.geometry].reverse(),sampled=samplePath(geometry);route.push(...sampled.slice(1));edgeIds.push(id);
   }
-  // Hierholzer traversal. The final walk consumes each required edge in one
-  // continuous trail; local turn preference gives long, confident movements.
-  const stack = [origin], reversed = [];
-  while (stack.length) {
-    const at = stack.at(-1), before = stack.length > 1 ? points[stack.at(-2)] : null;
-    const choices = adjacent[at].filter(id => count[id]);
-    if (!choices.length) { reversed.push(stack.pop()); continue; }
-    const p = points[at];
-    const score = id => { const e = edges[id], q = points[other(id,at)]; let turn = 0; if (before) turn = 1 - ((p[0]-before[0])*(q[0]-p[0])+(p[1]-before[1])*(q[1]-p[1]))/(distance(before,p)*e.length||1); return turn + rank(q)*.18 + (e.bridge?.08:0); };
-    const id = choices.reduce((a,b) => score(b)<score(a)?b:a); count[id]--; stack.push(other(id,at));
-  }
-  const order = reversed.reverse(), route = [points[order[0]]];
-  for (let i=1;i<order.length;i++) { const a=points[order[i-1]],b=points[order[i]],steps=Math.max(1,Math.ceil(distance(a,b)/2.5)); for(let j=1;j<=steps;j++){const f=j/steps;route.push(j===steps?b:[a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f]);} }
-  return { points: route, stats: { ...graph.stats, retraceLength, penLifts: 0, paths: 1 } };
+  if(edgeIds.length!==edges.length)throw new Error('한붓 경로에 연결되지 않은 선이 있습니다.');
+  const audit=new InkIndex();let overlappingSegments=0;
+  for(let i=1;i<route.length;i++){if(audit.overlaps(route[i-1],route[i]))overlappingSegments++;audit.add(route[i-1],route[i]);}
+  if(overlappingSegments)throw new Error('같은 선을 다시 지나는 경로가 발견되었습니다. 선화 정리 또는 세부 묘사를 낮춰 주세요.');
+  let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+  for(const[x,y]of route){x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y);}
+  return { points:route,edgeIds,bounds:{x:x0,y:y0,w:Math.max(1,x1-x0),h:Math.max(1,y1-y0)},stats:{...graph.stats,connectionCount:connections+graph.stats.bridgeCount,connectionLength:connectionLength+graph.stats.bridgeLength,originalEdgeCount:graph.edges.filter(e=>!e.bridge).length,totalEdges:edges.length,uniqueEdges:edgeIds.length,retraceLength:0,overlappingSegments,penLifts:0,paths:1} };
 }
 
 export function continuousPath(trace, start = 'bottom') {

@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-<header><a class="brand" href="./"><span class="brand-icon">╱</span> J&B <strong>LINE CINEMA</strong><span class="version">02</span></a><button id="openSettings" class="quiet">연결 설정 <span id="connectionLabel">API 키 필요</span></button></header>
+<header><a class="brand" href="./"><span class="brand-icon">╱</span> J&B <strong>LINE CINEMA</strong><span class="version">03</span></a><button id="openSettings" class="quiet">연결 설정 <span id="connectionLabel">API 키 필요</span></button></header>
 <main>
  <aside>
   <section>
@@ -26,7 +26,7 @@
    <label class="range-label" for="width">선 굵기 <output id="widthValue">2.6</output></label><input id="width" type="range" min="0.6" max="6" value="2.6" step="0.1">
    <label class="range-label" for="pressure">필압 변화 <output id="pressureValue">70%</output></label><input id="pressure" type="range" min="0" max="100" value="70">
    <label class="range-label" for="human">손의 리듬 <output id="humanValue">55%</output></label><input id="human" type="range" min="0" max="100" value="55">
-   <details><summary>선 추출 조절</summary><div class="detail-content"><label>원본 종류<select id="traceMode"><option value="auto">자동 판별</option><option value="line">선화 / 그림</option><option value="photo">사진 / 복잡한 그림</option></select></label><label class="range-label" for="detail">세부 묘사 <output id="detailValue">55%</output></label><input id="detail" type="range" min="10" max="90" value="55"><button id="retrace" class="secondary full">선 다시 추출 · 무료</button><p class="hint">떨어진 윤곽은 짧은 선으로 연결하고, 필요한 곳은 기존 선을 되짚습니다. 복잡한 사진은 ‘AI 선화 정리’로 간결하게 만드세요.</p></div></details>
+   <details><summary>선 추출 조절</summary><div class="detail-content"><label>원본 종류<select id="traceMode"><option value="auto">자동 판별</option><option value="line">선화 / 그림</option><option value="photo">사진 / 복잡한 그림</option></select></label><label class="range-label" for="detail">세부 묘사 <output id="detailValue">55%</output></label><input id="detail" type="range" min="10" max="90" value="55"><button id="retrace" class="secondary full">선 다시 추출 · 무료</button><p class="hint">같은 선은 한 번만 그립니다. 한붓으로 이어지도록 새 연결선이 추가될 수 있습니다. 복잡한 사진은 ‘AI 선화 정리’로 간결하게 만드세요.</p></div></details>
   </section>
   <section>
    <div class="section-heading"><span class="number">03</span><h2>궁금해지는 카메라</h2></div>
@@ -34,11 +34,11 @@
    <label>그리기 시작 위치<select id="start"><option value="bottom">아래쪽부터 · 정체를 늦게 공개</option><option value="left">왼쪽부터</option><option value="top">위쪽부터</option></select></label>
    <label class="range-label" for="background">밑그림 농도 <output id="backgroundValue">16%</output></label><input id="background" type="range" min="0" max="40" value="16">
    <label class="check"><input type="checkbox" id="pen" checked> 그리는 펜촉 표시</label>
-   <p class="hint" id="timingNote">펜을 떼지 않고 이어 그립니다. 선 길이에 따라 드로잉 시간이 늘어날 수 있습니다.</p><div class="ending"><span>ENDING</span><p>전체 공개 4초 + 선화만 3초</p></div>
+   <p class="hint" id="timingNote">펜을 떼거나 되짚지 않고 이어 그립니다. 선 길이에 따라 드로잉 시간이 늘어날 수 있습니다.</p><div class="ending"><span>ENDING</span><p>전체 공개 4초 + 선화만 3초</p></div>
   </section>
  </aside>
  <div class="workspace">
-  <div class="preview-head"><div><span class="eyebrow">THE DRAWING ROOM</span><h2>한 줄로, 끝까지 이어지는 그림.</h2></div><div class="segmented" aria-label="미리보기 모드"><button class="active" data-view="film">영상</button><button data-view="final">완성 선화</button><button data-view="source">원본</button></div></div>
+  <div class="preview-head"><div><span class="eyebrow">THE DRAWING ROOM</span><h2>되짚지 않는, 한 번의 선.</h2></div><div class="segmented" aria-label="미리보기 모드"><button class="active" data-view="film">영상</button><button data-view="final">완성 선화</button><button data-view="source">원본</button></div></div>
   <div class="stage" id="stage"><canvas id="preview" width="540" height="960" aria-label="드로잉 영상 미리보기"></canvas><div id="empty"><span class="empty-mark">╱</span><h2>첫 번째 선을 기다립니다.</h2><p>그림을 생성하거나 이미지를 불러오세요.<br>예시 체험은 API 키 없이 사용할 수 있습니다.</p><button id="emptySample" class="secondary">예시 영상 만들기</button></div><span class="stage-badge" id="stageBadge">9:16 · 30 FPS</span><span class="phase" id="phase">준비</span></div>
   <div class="transport"><button id="play" class="play" aria-label="재생 / 일시정지" disabled>▶</button><div class="scrub"><input id="seek" type="range" min="0" max="37" step="0.01" value="0" aria-label="재생 위치"><div class="time-labels"><span id="time">00:00.0</span><span id="total">00:37.0</span></div></div><button id="restart" class="quiet" title="처음으로">↺</button></div>
   <div class="timeline-labels"><span><i></i> 디테일 드로잉</span><span><i></i> 전체 공개 4초</span><span><i></i> 완성 선화 3초</span></div>
@@ -50,5 +50,5 @@
  </div>
 </main>
 <dialog id="settings"><form id="settingsForm"><div class="dialog-head"><h2>Gemini 연결</h2><button type="button" id="closeSettings" class="quiet" aria-label="닫기">✕</button></div><label>연결 방식<select id="provider"><option value="direct">API 키 직접 입력</option><option value="proxy">Cloudflare · 비밀번호</option></select></label><div id="directFields"><label>Gemini API 키<input id="apiKey" type="password" autocomplete="off" placeholder="AIza…"></label><label class="check"><input type="checkbox" id="remember" checked> 이 브라우저에 API 키 저장</label><p class="hint">로컬 저장은 암호화 보관이 아닙니다. 개인 기기에서만 사용하세요.</p><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio에서 키 발급</a></div><div id="proxyFields" hidden><label>Worker URL<input id="proxyUrl" type="url" placeholder="https://your-worker.workers.dev"></label><label>접속 비밀번호<input id="proxyPassword" type="password" autocomplete="off"></label><p class="hint">비밀번호는 저장하지 않습니다. ZIP의 cloudflare 폴더에 서버 코드와 연결 안내가 있습니다.</p></div><label>이미지 모델<input id="model" list="models" value="gemini-3.1-flash-image" spellcheck="false"></label><datalist id="models"><option value="gemini-3.1-flash-image"><option value="gemini-3.1-flash-lite-image"><option value="gemini-3-pro-image"><option value="gemini-2.5-flash-image"><option value="gemini-3.1-flash-image-preview"></datalist><p class="hint">사용 가능한 이미지 모델 ID로 변경할 수 있습니다. 생성 버튼을 누를 때만 API를 호출하며, 실패 시 자동 재시도하지 않습니다.</p><div class="row"><button type="button" id="forget" class="secondary">저장된 키 삭제</button><button class="primary" type="submit">설정 적용</button></div></form></dialog>
-<script type="module" src="./js/app.js?v=0.2.0"></script>
+<script type="module" src="./js/app.js?v=0.3.0"></script>
 </body></html>

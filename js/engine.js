@@ -1,4 +1,4 @@
-import { continuousPath } from './continuous-path.js';
+import { continuousPath } from './continuous-path.js?v=0.3.0';
 export const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
 const mix = (a, b, t) => a + (b - a) * t;
 const ease = t => { t = clamp(t); return t*t*t*(t*(t*6-15)+10); };
@@ -6,9 +6,8 @@ const distance = (a, b) => Math.hypot(a[0]-b[0], a[1]-b[1]);
 
 export function makeScene(trace, settings) {
   const options = { ...settings, requestedDuration: settings.duration }, route = continuousPath(trace, options.start);
-  const human = options.human / 100, b = trace.bounds;
-  // A smooth spatial displacement is identical on every visit to a location.
-  // Shared joints and retraced edges cannot drift apart into disconnected ink.
+  const human = options.human / 100, b = route.bounds;
+  // Spatial displacement is continuous at shared joints and crossings.
   const points = route.points.map(([x,y]) => [clamp(x + human*.15*Math.sin(x*.07+y*.035),0,trace.width), clamp(y + human*.15*Math.sin(y*.08-x*.04),0,trace.height)]);
   const lengths = [0], clock = [0]; let length = 0, weight = 0;
   for (let i=1; i<points.length; i++) {
@@ -23,7 +22,7 @@ export function makeScene(trace, settings) {
   options.duration = Math.max(options.duration, Math.ceil(weight/maxSpeed));
   const ws = points.map(([x,y]) => options.width * mix(1,.7+.18*Math.sin(x*.037+y*.029)+.1*Math.sin(x*.103-y*.071),options.pressure/100));
   // Only the very first contact tapers. Internal cache boundaries never taper.
-  // Repeated coordinates use the same pressure, keeping retracing aligned.
+  // Internal chunk boundaries and crossings keep the same pressure.
   const first = points[0];
   for (let i=0; i<points.length; i++) { const d=distance(first,points[i]); if(d<7) ws[i]*=mix(1,.22+.78*ease(d/7),options.pressure/100); }
   const strokes=[]; let from=0;
@@ -35,7 +34,7 @@ export function makeScene(trace, settings) {
   for(let i=1;i<points.length;i++) if(lengths[i]-lengths[from]>=Math.max(20,Math.max(b.w,b.h)*.16)||i===points.length-1) chunk(i);
   // Chunks are render caches on ONE path, sharing their end/start, pressure,
   // and clock exactly. They are not separate strokes or pen-lift events.
-  const scene={...trace,strokes,options,duration:options.duration+7,continuity:{...route.stats,length}};
+  const scene={...trace,bounds:b,strokes,options,duration:options.duration+7,continuity:{...route.stats,length}};
   scene.cameraTrack=buildCamera(scene);return scene;
 }
 function activeAt(scene,t){let lo=0,hi=scene.strokes.length;while(lo<hi){const m=(lo+hi)>>1;if(scene.strokes[m].end<t)lo=m+1;else hi=m;}return Math.min(lo,scene.strokes.length-1);}
@@ -55,6 +54,6 @@ export class Renderer{
  render(t,view='film'){const c=this.ctx,{width:W,height:H}=this.canvas,s=this.scene,o=s.options,b=s.bounds;const final=view==='final',source=view==='source';if(final)t=s.duration;const fullCount=source?0:activeAt(s,t)+(t>=o.duration?1:0);if(fullCount<this.cached){this.cacheCtx.clearRect(0,0,s.width,s.height);this.cached=0;}while(this.cached<fullCount&&this.cached<s.strokes.length){this.cacheCtx.fill(this.paths[this.cached]);this.cached++;}c.setTransform(1,0,0,1,0,0);c.fillStyle='#fff';c.fillRect(0,0,W,H);const cam=source?{x:b.x+b.w/2,y:b.y+b.h/2,zoom:1,rotation:0}:cameraAt(s,t),scale=Math.min(W/(b.w*1.18),H/(b.h*1.18))*cam.zoom;
  c.save();c.translate(W/2,H/2);c.rotate(cam.rotation);c.scale(scale,scale);c.translate(-cam.x,-cam.y);const alpha=source?1:(o.background/100)*(1-ease((t-o.duration)/3));if(this.image&&alpha>0&&!final){c.globalAlpha=alpha;c.drawImage(this.image,0,0,s.width,s.height);c.globalAlpha=1;}if(!source){c.drawImage(this.cache,0,0,s.width,s.height);if(t<o.duration){const st=s.strokes[fullCount];if(st&&t>st.start){const p=clamp((t-st.start)/(st.end-st.start));c.fillStyle='#18191d';c.fill(inkPath(st,p));}}}c.restore();
  if(!source&&!final&&o.pen&&t<o.duration){const p=tipAt(s,t),dx=(p.x-cam.x)*scale,dy=(p.y-cam.y)*scale,x=W/2+dx*Math.cos(cam.rotation)-dy*Math.sin(cam.rotation),y=H/2+dx*Math.sin(cam.rotation)+dy*Math.cos(cam.rotation);c.save();c.translate(x,y);c.rotate(-.72);const z=W/540;c.scale(z,z);c.globalAlpha=p.drawing?.85:.32;c.beginPath();c.moveTo(0,0);c.lineTo(3,-12);c.lineTo(7,-12);c.closePath();c.fillStyle='#252630';c.fill();c.beginPath();c.moveTo(5,-11);c.lineTo(8,-37);c.lineWidth=5;c.strokeStyle='#afb1ba';c.lineCap='round';c.stroke();c.restore();}
- return{phase:t<o.duration?'끊김 없는 한 줄 드로잉':t<o.duration+4?'전체 공개':'완성 선화 · 3초',backgroundAlpha:alpha,cam};}
+ return{phase:t<o.duration?'되짚기 없는 한붓 드로잉':t<o.duration+4?'전체 공개':'완성 선화 · 3초',backgroundAlpha:alpha,cam};}
 }
 export function sceneSVG(scene){const b=scene.bounds,pad=Math.max(b.w,b.h)*.06,n=v=>v.toFixed(4);let paths='';for(const s of scene.strokes){let d='';inkGeometry(s,1,(x,y)=>{d+=`M${n(x)} ${n(y)}`;},(x,y)=>{d+=`L${n(x)} ${n(y)}`;},(x,y,r)=>{d+=`A${n(r)} ${n(r)} 0 1 1 ${n(x-r)} ${n(y)}A${n(r)} ${n(r)} 0 1 1 ${n(x+r)} ${n(y)}`;},()=>{d+='Z';});paths+=`<path d="${d}"/>`;}return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${b.x-pad} ${b.y-pad} ${b.w+pad*2} ${b.h+pad*2}"><title>One continuous pen-down drawing</title><rect x="${b.x-pad}" y="${b.y-pad}" width="${b.w+pad*2}" height="${b.h+pad*2}" fill="white"/><g fill="#18191d">${paths}</g></svg>`;}
