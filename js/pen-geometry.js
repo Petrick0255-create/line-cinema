@@ -30,14 +30,14 @@ export function samplePath(points,spacing=2.5) {
 // New connectors occupy new geometry. A short bowed connection is used when
 // a straight connection would run along an existing stroke. Intersections are
 // permitted, but no connector may share a segment with any existing edge.
-export function makeConnector(a,b,ink,width,height) {
+export function makeConnector(a,b,ink,width,height,guide=null) {
   const d=distance(a,b),nx=-(b[1]-a[1])/(d||1),ny=(b[0]-a[0])/(d||1),base=Math.max(2.8,Math.min(8,d*.18));
   let best=null,bestScore=Infinity;
   const offsets=[0,base,-base,base*1.7,-base*1.7,base*2.6,-base*2.6];
   for(const offset of offsets){
     const control=[clamp((a[0]+b[0])/2+nx*offset*2,0,width),clamp((a[1]+b[1])/2+ny*offset*2,0,height)],steps=Math.max(2,Math.ceil((d+Math.abs(offset)*2)/1.4)),points=[a];
     let length=0,buried=0,invalid=false;
-    for(let j=1;j<=steps;j++){const t=j/steps,u=1-t,p=j===steps?b:[u*u*a[0]+2*u*t*control[0]+t*t*b[0],u*u*a[1]+2*u*t*control[1]+t*t*b[1]],prev=points.at(-1),ds=distance(prev,p);if(ink.overlaps(prev,p)){invalid=true;break;}length+=ds;if(j>1&&j<steps)buried+=ds*(1-ink.clearance(p,2)/2);points.push(p);}
+    for(let j=1;j<=steps;j++){const t=j/steps,u=1-t,p=j===steps?b:[u*u*a[0]+2*u*t*control[0]+t*t*b[0],u*u*a[1]+2*u*t*control[1]+t*t*b[1]],prev=points.at(-1),ds=distance(prev,p);if(ink.overlaps(prev,p)||(guide&&!guide.supports(prev,p))){invalid=true;break;}length+=ds;if(j>1&&j<steps)buried+=ds*(1-ink.clearance(p,2)/2);points.push(p);}
     if(invalid)continue;
     const score=length+buried*2.2;
     if(score<bestScore){bestScore=score;best={points,length};}

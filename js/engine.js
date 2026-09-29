@@ -1,11 +1,11 @@
-import { continuousPath } from './continuous-path.js?v=0.3.0';
+import { continuousPath } from './continuous-path.js?v=0.3.2';
 export const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
 const mix = (a, b, t) => a + (b - a) * t;
 const ease = t => { t = clamp(t); return t*t*t*(t*(t*6-15)+10); };
 const distance = (a, b) => Math.hypot(a[0]-b[0], a[1]-b[1]);
 
 export function makeScene(trace, settings) {
-  const options = { ...settings, requestedDuration: settings.duration }, route = continuousPath(trace, options.start);
+  const options = { ...settings, requestedDuration: settings.duration }, route = continuousPath(trace, options.start, options.cleanup, true);
   const human = options.human / 100, b = route.bounds;
   // Spatial displacement is continuous at shared joints and crossings.
   const points = route.points.map(([x,y]) => [clamp(x + human*.15*Math.sin(x*.07+y*.035),0,trace.width), clamp(y + human*.15*Math.sin(y*.08-x*.04),0,trace.height)]);
@@ -52,7 +52,7 @@ export class Renderer{
  constructor(canvas,scene,image){this.canvas=canvas;this.ctx=canvas.getContext('2d',{alpha:false});this.scene=scene;this.image=image;this.paths=scene.strokes.map(s=>inkPath(s,1));this.resetCache();}
  resetCache(){const s=this.scene;this.cache=document.createElement('canvas');this.cacheScale=Math.min(2,3000/Math.max(s.width,s.height));this.cache.width=Math.ceil(s.width*this.cacheScale);this.cache.height=Math.ceil(s.height*this.cacheScale);this.cacheCtx=this.cache.getContext('2d');this.cacheCtx.scale(this.cacheScale,this.cacheScale);this.cacheCtx.fillStyle='#18191d';this.cached=0;}
  render(t,view='film'){const c=this.ctx,{width:W,height:H}=this.canvas,s=this.scene,o=s.options,b=s.bounds;const final=view==='final',source=view==='source';if(final)t=s.duration;const fullCount=source?0:activeAt(s,t)+(t>=o.duration?1:0);if(fullCount<this.cached){this.cacheCtx.clearRect(0,0,s.width,s.height);this.cached=0;}while(this.cached<fullCount&&this.cached<s.strokes.length){this.cacheCtx.fill(this.paths[this.cached]);this.cached++;}c.setTransform(1,0,0,1,0,0);c.fillStyle='#fff';c.fillRect(0,0,W,H);const cam=source?{x:b.x+b.w/2,y:b.y+b.h/2,zoom:1,rotation:0}:cameraAt(s,t),scale=Math.min(W/(b.w*1.18),H/(b.h*1.18))*cam.zoom;
- c.save();c.translate(W/2,H/2);c.rotate(cam.rotation);c.scale(scale,scale);c.translate(-cam.x,-cam.y);const alpha=source?1:(o.background/100)*(1-ease((t-o.duration)/3));if(this.image&&alpha>0&&!final){c.globalAlpha=alpha;c.drawImage(this.image,0,0,s.width,s.height);c.globalAlpha=1;}if(!source){c.drawImage(this.cache,0,0,s.width,s.height);if(t<o.duration){const st=s.strokes[fullCount];if(st&&t>st.start){const p=clamp((t-st.start)/(st.end-st.start));c.fillStyle='#18191d';c.fill(inkPath(st,p));}}}c.restore();
+ c.save();c.translate(W/2,H/2);c.rotate(cam.rotation);c.scale(scale,scale);c.translate(-cam.x,-cam.y);const alpha=source?1:(o.showBackground===false?0:o.background/100)*(1-ease((t-o.duration)/3));if(this.image&&alpha>0&&!final){c.globalAlpha=alpha;c.drawImage(this.image,0,0,s.width,s.height);c.globalAlpha=1;}if(!source){c.drawImage(this.cache,0,0,s.width,s.height);if(t<o.duration){const st=s.strokes[fullCount];if(st&&t>st.start){const p=clamp((t-st.start)/(st.end-st.start));c.fillStyle='#18191d';c.fill(inkPath(st,p));}}}c.restore();
  if(!source&&!final&&o.pen&&t<o.duration){const p=tipAt(s,t),dx=(p.x-cam.x)*scale,dy=(p.y-cam.y)*scale,x=W/2+dx*Math.cos(cam.rotation)-dy*Math.sin(cam.rotation),y=H/2+dx*Math.sin(cam.rotation)+dy*Math.cos(cam.rotation);c.save();c.translate(x,y);c.rotate(-.72);const z=W/540;c.scale(z,z);c.globalAlpha=p.drawing?.85:.32;c.beginPath();c.moveTo(0,0);c.lineTo(3,-12);c.lineTo(7,-12);c.closePath();c.fillStyle='#252630';c.fill();c.beginPath();c.moveTo(5,-11);c.lineTo(8,-37);c.lineWidth=5;c.strokeStyle='#afb1ba';c.lineCap='round';c.stroke();c.restore();}
  return{phase:t<o.duration?'되짚기 없는 한붓 드로잉':t<o.duration+4?'전체 공개':'완성 선화 · 3초',backgroundAlpha:alpha,cam};}
 }
