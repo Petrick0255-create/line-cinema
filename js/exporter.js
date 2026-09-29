@@ -1,4 +1,4 @@
-import{Renderer}from'./engine.js';
+import{Renderer}from'./engine.js?v=0.2.0';
 import{muxMP4}from'./mp4.js';
 export function dimensions(aspect,short=1080){const[a,b]=aspect.split(':').map(Number);if(a===b)return[short,short];return a>b?[Math.round(short*a/b/2)*2,short]:[short,Math.round(short*b/a/2)*2];}
 const tick=()=>new Promise(r=>setTimeout(r,0));
