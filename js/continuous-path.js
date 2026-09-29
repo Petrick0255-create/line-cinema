@@ -1,8 +1,9 @@
 // One Euler trail: every edge is used exactly once. Odd junctions are paired
 // with NEW ink connections, never with copies of already drawn edges.
-import { InkIndex, makeConnector, samplePath, uniqueSegments, cleanJunctions } from './pen-geometry.js?v=0.3.2';
-import { ContourGuide, supportedConnector } from './contour-guide.js?v=0.3.2';
-import { cleanContours } from './contour-cleanup.js?v=0.3.2';
+import { InkIndex, makeConnector, samplePath, uniqueSegments, cleanJunctions } from './pen-geometry.js?v=0.3.3';
+import { ContourGuide, optimizedConnector } from './contour-guide.js?v=0.3.3';
+import { cleanContours } from './contour-cleanup.js?v=0.3.3';
+import { matchEndpoints } from './route-matching.js?v=0.3.3';
 const distance = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
 const cache = new WeakMap();
 
@@ -36,7 +37,7 @@ function nearestOutside(node, point, group, groups, points, best) {
   if (delta * delta <= best.d) nearestOutside(delta < 0 ? node.right : node.left, point, group, groups, points, best);
 }
 
-function buildGraph(trace, cleanup, contourOnly) {
+function buildGraph(trace, cleanup, preferContours) {
   const points = [], edges = [], adjacent = [], byPoint = new Map(), byEdge = new Set();
   function vertex(p) {
     const key = p.map(n => Math.round(n * 10000)).join(',');
@@ -54,8 +55,9 @@ function buildGraph(trace, cleanup, contourOnly) {
   }
   // Sampling also lets a disconnected endpoint attach close to the middle of
   // another contour, rather than drawing a long diagonal to its far endpoint.
-  const cleaned=cleanJunctions(uniqueSegments(trace.paths));
-  const filtered=cleanContours(cleaned.segments,cleanup,trace.width,trace.height);
+  const original=uniqueSegments(trace.paths),cleaned=cleanJunctions(original);
+  let filtered=cleanContours(cleaned.segments,cleanup,trace.width,trace.height);
+  if(!filtered.segments.length)filtered={segments:cleaned.segments.length?cleaned.segments:original,removedLength:0,removedComponents:0,removedDetails:0};
   for (const path of uniqueSegments(filtered.segments)) {
     let previous = vertex(path[0]);
     for (let i = 1; i < path.length; i++) {
@@ -77,10 +79,10 @@ function buildGraph(trace, cleanup, contourOnly) {
       nearestOutside(tree, points[a], group, groups, points, best);
       if (best.id >= 0 && (!candidates.has(group) || best.d < candidates.get(group).d)) candidates.set(group, { a, b: best.id, d: best.d });
     }
-    for (const e of [...candidates.values()].sort((a, b) => a.d - b.d || a.a - b.a)) if (union.join(e.a, e.b)){if(contourOnly&&Math.sqrt(e.d)>5.5)throw new Error('피사체 사이의 빈 공간에는 연결선을 만들지 않습니다. 현재 선이 떨어져 있어 한붓으로 연결할 수 없습니다. 잔선 정리를 높이거나 피사체가 자연스럽게 이어지는 선화를 사용해 주세요.');edge(e.a,e.b,true);}
+    for (const e of [...candidates.values()].sort((a, b) => a.d - b.d || a.a - b.a)) if (union.join(e.a, e.b)){edge(e.a,e.b,true);}
   }
   const bridges = edges.filter(e => e.bridge);
-  return { points, edges, adjacent, guide:contourOnly?new ContourGuide(points,edges,adjacent):null, width:trace.width, height:trace.height, stats: { removedDetailLength:filtered.removedLength,removedComponents:filtered.removedComponents,removedDetails:filtered.removedDetails,simplifiedJunctions:cleaned.merged,prunedLength:cleaned.prunedLength,components, bridgeCount: bridges.length, bridgeLength: bridges.reduce((n, e) => n + e.length, 0), maxBridge: Math.max(0, ...bridges.map(e => e.length)), originalLength: edges.filter(e => !e.bridge).reduce((n, e) => n + e.length, 0) } };
+  return { points, edges, adjacent, guide:preferContours?new ContourGuide(points,edges,adjacent):null, width:trace.width, height:trace.height, stats: { removedDetailLength:filtered.removedLength,removedComponents:filtered.removedComponents,removedDetails:filtered.removedDetails,simplifiedJunctions:cleaned.merged,prunedLength:cleaned.prunedLength,components, bridgeCount: bridges.length, bridgeLength: bridges.reduce((n, e) => n + e.length, 0), maxBridge: Math.max(0, ...bridges.map(e => e.length)), originalLength: edges.filter(e => !e.bridge).reduce((n, e) => n + e.length, 0) } };
 }
 
 function walk(graph, start, bounds) {
@@ -91,19 +93,9 @@ function walk(graph, start, bounds) {
   const origin = candidates.reduce((a, b) => rank(points[b]) < rank(points[a]) ? b : a);
   const ink=new InkIndex();for(const e of edges)ink.addPath(e.geometry);
   let connectionLength=0,connections=0;
-  const metric=(a,b)=>graph.guide?graph.guide.distance(a,b):distance(points[a],points[b]);
-  if (odd.length>2) {
-    const end=odd.filter(id=>id!==origin).reduce((a,b)=>rank(points[b])>rank(points[a])?b:a);
-    const pending=odd.filter(id=>id!==origin&&id!==end).sort((a,b)=>rank(points[a])-rank(points[b])||a-b),pairs=[];
-    while(pending.length){const a=pending.shift();let best=0;for(let i=1;i<pending.length;i++)if(metric(a,pending[i])<metric(a,pending[best]))best=i;pairs.push([a,pending.splice(best,1)[0]]);}
-    // Uncross nearby pairings when doing so shortens the new ink. No graph
-    // path is duplicated, even when two paired vertices are already adjacent.
-    for(let pass=0;pass<2;pass++)for(let i=0;i<pairs.length;i++)for(let j=i+1;j<Math.min(pairs.length,i+80);j++){
-      const[a,b]=pairs[i],[c,d]=pairs[j],old=metric(a,b)+metric(c,d),ac=metric(a,c)+metric(b,d),ad=metric(a,d)+metric(b,c);
-      if(Math.min(ac,ad)<old-1e-6){pairs[i]=[a,ac<ad?c:d];pairs[j]=[b,ac<ad?d:c];}
-    }
-    for(const[a,b]of pairs){let path;try{path=makeConnector(points[a],points[b],ink,graph.width,graph.height,graph.guide);}catch(error){if(!graph.guide)throw error;path=supportedConnector(points[a],points[b],ink,graph.width,graph.height,graph.guide);}const id=edges.length;edges.push({a,b,length:path.length,bridge:true,geometry:path.points});adjacent[a].push(id);adjacent[b].push(id);ink.addPath(path.points);connectionLength+=path.length;connections++;}
-  }
+  const metric=(a,b)=>graph.guide?graph.guide.linkCost(a,b):distance(points[a],points[b]);
+  const matching=matchEndpoints(odd,origin,metric,id=>rank(points[id]));
+  for(const[a,b]of matching.pairs){const path=optimizedConnector(points[a],points[b],ink,graph.width,graph.height,graph.guide),id=edges.length;edges.push({a,b,length:path.length,bridge:true,geometry:path.points});adjacent[a].push(id);adjacent[b].push(id);ink.addPath(path.points);connectionLength+=path.length;connections++;}
   const other = (id, at) => edges[id].a === at ? edges[id].b : edges[id].a;
   // Single-use flags are the invariant. There is no multiplicity counter,
   // duplicated-edge list, pen-up travel, or fallback to retracing.
@@ -128,16 +120,16 @@ function walk(graph, start, bounds) {
   if(overlappingSegments)throw new Error('같은 선을 다시 지나는 경로가 발견되었습니다. 선화 정리 또는 세부 묘사를 낮춰 주세요.');
   let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
   for(const[x,y]of route){x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y);}
-  return { points:route,edgeIds,bounds:{x:x0,y:y0,w:Math.max(1,x1-x0),h:Math.max(1,y1-y0)},stats:{...graph.stats,connectionCount:connections+graph.stats.bridgeCount,connectionLength:connectionLength+graph.stats.bridgeLength,originalEdgeCount:graph.edges.filter(e=>!e.bridge).length,totalEdges:edges.length,uniqueEdges:edgeIds.length,retraceLength:0,overlappingSegments,penLifts:0,paths:1} };
+  return { points:route,edgeIds,bounds:{x:x0,y:y0,w:Math.max(1,x1-x0),h:Math.max(1,y1-y0)},stats:{...graph.stats,matchingMethod:matching.method,matchingCost:matching.cost,initialMatchingCost:matching.baselineCost,connectionCount:connections+graph.stats.bridgeCount,connectionLength:connectionLength+graph.stats.bridgeLength,originalEdgeCount:graph.edges.filter(e=>!e.bridge).length,totalEdges:edges.length,uniqueEdges:edgeIds.length,retraceLength:0,overlappingSegments,penLifts:0,paths:1} };
 }
 
-export function continuousPath(trace, start = 'bottom', cleanup = 0, contourOnly = false) {
+export function continuousPath(trace, start = 'bottom', cleanup = 0, preferContours = false) {
   cleanup=Math.round(Math.max(0,Math.min(100,Number(cleanup)||0)));
   let variants=cache.get(trace);
   if(!variants){variants=new Map();cache.set(trace,variants);}
-  const key=`${cleanup}:${contourOnly}`;
+  const key=`${cleanup}:${preferContours}`;
   let entry=variants.get(key);
-  if(!entry){entry={graph:buildGraph(trace,cleanup,contourOnly),routes:new Map()};variants.set(key,entry);if(variants.size>4)variants.delete(variants.keys().next().value);}
+  if(!entry){entry={graph:buildGraph(trace,cleanup,preferContours),routes:new Map()};variants.set(key,entry);if(variants.size>4)variants.delete(variants.keys().next().value);}
   if (!entry.routes.has(start)) entry.routes.set(start, walk(entry.graph, start, trace.bounds));
   return entry.routes.get(start);
 }

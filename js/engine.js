@@ -1,4 +1,4 @@
-import { continuousPath } from './continuous-path.js?v=0.3.2';
+import { continuousPath } from './continuous-path.js?v=0.3.3';
 export const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
 const mix = (a, b, t) => a + (b - a) * t;
 const ease = t => { t = clamp(t); return t*t*t*(t*(t*6-15)+10); };

@@ -33,13 +33,13 @@ export function samplePath(points,spacing=2.5) {
 export function makeConnector(a,b,ink,width,height,guide=null) {
   const d=distance(a,b),nx=-(b[1]-a[1])/(d||1),ny=(b[0]-a[0])/(d||1),base=Math.max(2.8,Math.min(8,d*.18));
   let best=null,bestScore=Infinity;
-  const offsets=[0,base,-base,base*1.7,-base*1.7,base*2.6,-base*2.6];
+  const offsets=[0,.65,-.65,1.3,-1.3,base,-base,base*1.7,-base*1.7,base*2.6,-base*2.6,base*4.1,-base*4.1];
   for(const offset of offsets){
     const control=[clamp((a[0]+b[0])/2+nx*offset*2,0,width),clamp((a[1]+b[1])/2+ny*offset*2,0,height)],steps=Math.max(2,Math.ceil((d+Math.abs(offset)*2)/1.4)),points=[a];
-    let length=0,buried=0,invalid=false;
-    for(let j=1;j<=steps;j++){const t=j/steps,u=1-t,p=j===steps?b:[u*u*a[0]+2*u*t*control[0]+t*t*b[0],u*u*a[1]+2*u*t*control[1]+t*t*b[1]],prev=points.at(-1),ds=distance(prev,p);if(ink.overlaps(prev,p)||(guide&&!guide.supports(prev,p))){invalid=true;break;}length+=ds;if(j>1&&j<steps)buried+=ds*(1-ink.clearance(p,2)/2);points.push(p);}
+    let length=0,weighted=0,buried=0,invalid=false;const ownInk=new InkIndex();
+    for(let j=1;j<=steps;j++){const t=j/steps,u=1-t,p=j===steps?b:[u*u*a[0]+2*u*t*control[0]+t*t*b[0],u*u*a[1]+2*u*t*control[1]+t*t*b[1]],prev=points.at(-1),ds=distance(prev,p);if(ink.overlaps(prev,p)||ownInk.overlaps(prev,p)||(guide&&!guide.supports(prev,p))){invalid=true;break;}length+=ds;weighted+=guide?.cost?guide.cost(prev,p):ds;ownInk.add(prev,p);if(j>1&&j<steps)buried+=ds*(1-ink.clearance(p,2)/2);points.push(p);}
     if(invalid)continue;
-    const score=length+buried*2.2;
+    const score=weighted+buried*2.2;
     if(score<bestScore){bestScore=score;best={points,length};}
   }
   if(!best)throw new Error('겹치지 않는 연결선을 만들 수 없습니다. 선화 정리 또는 세부 묘사를 낮춰 주세요.');
