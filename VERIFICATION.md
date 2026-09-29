@@ -1,3 +1,17 @@
+# v0.3.1 Gemini 요청 형식 수정 · 2026-09-30
+
+- 사용자가 보고한 400 오류의 원인: v1 `responseFormat.image.aspectRatio`와 `imageSize`에 enum 대신 `"9:16"`, `"1K"`를 전송.
+- 공식 `ImageResponseFormat` 규격에 맞춰 `ASPECT_RATIO_NINE_BY_SIXTEEN`, `ASPECT_RATIO_SIXTEEN_BY_NINE`, `ASPECT_RATIO_ONE_BY_ONE`, `IMAGE_SIZE_ONE_K`로 변환.
+- Preview/v1beta `imageConfig`는 문자열 유지. Gemini 2.5의 해상도 필드는 생략.
+- Cloudflare Worker에서도 같은 오류를 수정. 이전 문자열 입력과 새 enum 입력을 모두 받아 화면 비율을 보존하고 출력 크기는 1K로 제한.
+- API 계약 검사 11개 통과. 이전 잘못된 요청은 검증기에서 거부되는지 확인. 안정 모델 3종 × 비율 3종, 이미지 입력, Preview, Gemini 2.5, 프록시, 잘못된 비율, 인증 거부, 400 자동 재시도 없음 포함.
+- 실제 브라우저의 9:16/16:9/1:1 각각에서 원본 생성→선화 생성 요청 2회, 총 6회를 엄격한 모의 API로 검사. 올바른 enum일 때만 성공 응답. 화면에 작품 설치 완료, JS 오류 없음.
+- 브라우저 캐시가 이전 API 파일을 쓰지 않도록 앱 진입점과 Gemini 모듈 URL 갱신.
+- 실제 사용자 키를 통한 유료 이미지 생성은 실행하지 않았음. 계정의 모델 접근·결제·할당량 및 생성 품질은 검증 범위 밖.
+- 한붓 경로·필압·카메라·영상 출력 코드는 이번 수정에서 변경하지 않음. 아래 v0.3 검증 결과를 적용.
+
+---
+
 # v0.3 한붓 그리기 검증 · 2026-09-30
 
 - 각 선분을 한 번만 지나는 경로로 변경. 되짚기용 중복 간선과 복귀 경로 제거.

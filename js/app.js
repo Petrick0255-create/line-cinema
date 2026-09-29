@@ -1,5 +1,5 @@
 import{makeScene,Renderer,sceneSVG,clamp}from'./engine.js?v=0.3.0';
-import{generateImage,IMAGE_PROMPT,LINE_PROMPT}from'./gemini.js?v=0.3.0';
+import{generateImage,IMAGE_PROMPT,LINE_PROMPT}from'./gemini.js?v=0.3.1';
 import{exportVideo,dimensions}from'./exporter.js?v=0.3.0';
 const $=id=>document.getElementById(id),version=1;
 const state={source:null,guide:null,trace:null,scene:null,image:null,renderer:null,time:0,view:'film',playing:false,busy:false,controller:null,downloadURL:null,name:'새 작품'};

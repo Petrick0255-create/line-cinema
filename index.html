@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-<header><a class="brand" href="./"><span class="brand-icon">╱</span> J&B <strong>LINE CINEMA</strong><span class="version">03</span></a><button id="openSettings" class="quiet">연결 설정 <span id="connectionLabel">API 키 필요</span></button></header>
+<header><a class="brand" href="./"><span class="brand-icon">╱</span> J&B <strong>LINE CINEMA</strong><span class="version">03.1</span></a><button id="openSettings" class="quiet">연결 설정 <span id="connectionLabel">API 키 필요</span></button></header>
 <main>
  <aside>
   <section>
@@ -50,5 +50,5 @@
  </div>
 </main>
 <dialog id="settings"><form id="settingsForm"><div class="dialog-head"><h2>Gemini 연결</h2><button type="button" id="closeSettings" class="quiet" aria-label="닫기">✕</button></div><label>연결 방식<select id="provider"><option value="direct">API 키 직접 입력</option><option value="proxy">Cloudflare · 비밀번호</option></select></label><div id="directFields"><label>Gemini API 키<input id="apiKey" type="password" autocomplete="off" placeholder="AIza…"></label><label class="check"><input type="checkbox" id="remember" checked> 이 브라우저에 API 키 저장</label><p class="hint">로컬 저장은 암호화 보관이 아닙니다. 개인 기기에서만 사용하세요.</p><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio에서 키 발급</a></div><div id="proxyFields" hidden><label>Worker URL<input id="proxyUrl" type="url" placeholder="https://your-worker.workers.dev"></label><label>접속 비밀번호<input id="proxyPassword" type="password" autocomplete="off"></label><p class="hint">비밀번호는 저장하지 않습니다. ZIP의 cloudflare 폴더에 서버 코드와 연결 안내가 있습니다.</p></div><label>이미지 모델<input id="model" list="models" value="gemini-3.1-flash-image" spellcheck="false"></label><datalist id="models"><option value="gemini-3.1-flash-image"><option value="gemini-3.1-flash-lite-image"><option value="gemini-3-pro-image"><option value="gemini-2.5-flash-image"><option value="gemini-3.1-flash-image-preview"></datalist><p class="hint">사용 가능한 이미지 모델 ID로 변경할 수 있습니다. 생성 버튼을 누를 때만 API를 호출하며, 실패 시 자동 재시도하지 않습니다.</p><div class="row"><button type="button" id="forget" class="secondary">저장된 키 삭제</button><button class="primary" type="submit">설정 적용</button></div></form></dialog>
-<script type="module" src="./js/app.js?v=0.3.0"></script>
+<script type="module" src="./js/app.js?v=0.3.1"></script>
 </body></html>

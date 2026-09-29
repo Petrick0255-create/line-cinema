@@ -1,6 +1,21 @@
-# J&B Line Cinema 0.3 · One stroke, no retracing
+# J&B Line Cinema 0.3.1 · One stroke, no retracing
 
 Gemini로 만든 그림 또는 직접 올린 이미지로 펜을 떼거나 되짚지 않는 한붓 드로잉 아트 영상을 만드는 **빌드 없는 정적 웹앱**입니다. GitHub Pages에 파일을 올리면 실행됩니다. React, npm 설치, CDN, 별도 서버가 필요하지 않습니다. 이미지 생성 시에만 Gemini 서버와 통신합니다.
+
+## 0.3.1 이미지 생성 400 오류 수정
+
+v1 `generationConfig.responseFormat.image`는 표시 문자열이 아닌 enum 값을 요구합니다. 이전 버전이 `"9:16"`과 `"1K"`를 그대로 보내던 오류를 수정했습니다.
+
+| 화면 설정 | v1 REST 요청 값 |
+| --- | --- |
+| 9:16 | `ASPECT_RATIO_NINE_BY_SIXTEEN` |
+| 16:9 | `ASPECT_RATIO_SIXTEEN_BY_NINE` |
+| 1:1 | `ASPECT_RATIO_ONE_BY_ONE` |
+| 1K | `IMAGE_SIZE_ONE_K` |
+
+Preview의 v1beta `imageConfig`에는 기존 문자열을 보냅니다. Cloudflare Worker도 같은 방식으로 수정했고, 이전 웹앱의 문자열 입력과 새 enum 입력을 모두 받습니다. Worker를 사용 중이면 별도로 재배포하세요. `index.html`과 `js` 파일을 함께 교체하고 새로고침하면 화면 상단에 **03.1**이 표시됩니다.
+
+공식 규격: https://ai.google.dev/api/generate-content#ImageResponseFormat
 
 ## 빠른 시작: GitHub Pages
 
@@ -93,4 +108,4 @@ AI가 원본을 선화로 다시 그릴 때 위치가 조금 달라질 수 있�
 
 ## 회귀 검사
 
-`node --test tests/continuous-path.test.mjs`로 되짚기 금지, 입력 중복선 병합, 분리된 윤곽 연결, 교차점 보존, 필압/시간 연속성, 30·24·18fps를 검사합니다. 실제 예시의 추출 경로도 포함하며, 3가지 시작 위치에서 선분이 겹치는지 독립적으로 검사합니다. 외부 패키지 설치 없이 Node.js로 실행합니다.
+`node --test tests/*.test.mjs`로 되짚기 금지, 입력 중복선 병합, 분리된 윤곽 연결, 교차점 보존, 필압/시간 연속성, 30·24·18fps를 검사합니다. 실제 예시의 추출 경로도 포함하며, 3가지 시작 위치에서 선분이 겹치는지 독립적으로 검사합니다. 외부 패키지 설치 없이 Node.js로 실행합니다.
