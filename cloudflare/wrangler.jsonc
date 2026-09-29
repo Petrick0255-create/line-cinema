@@ -1,0 +1,16 @@
+{
+  "name": "jnb-line-cinema-api",
+  "main": "worker.js",
+  "compatibility_date": "2026-09-29",
+  "vars": {
+    "ALLOWED_ORIGINS": "https://YOUR_USERNAME.github.io",
+    "ALLOWED_MODELS": "gemini-3.1-flash-image,gemini-3.1-flash-lite-image,gemini-3-pro-image,gemini-2.5-flash-image,gemini-3.1-flash-image-preview"
+  },
+  "ratelimits": [
+    {
+      "name": "RATE_LIMITER",
+      "namespace_id": "193001",
+      "simple": { "limit": 12, "period": 60 }
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#151619"><meta name="description" content="Gemini 그림을 필압 드로잉과 카메라 연출이 있는 아트 영상으로 만드세요.">
+  <title>J&B Line Cinema</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23ff794f'/%3E%3Cpath d='M8 23L24 8M9 24l6-2-4-4z' fill='none' stroke='%23151619' stroke-width='3'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<header><a class="brand" href="./"><span class="brand-icon">╱</span> J&B <strong>LINE CINEMA</strong><span class="version">01</span></a><button id="openSettings" class="quiet">연결 설정 <span id="connectionLabel">API 키 필요</span></button></header>
+<main>
+ <aside>
+  <section>
+   <div class="section-heading"><span class="number">01</span><h1>어떤 그림을 그릴까요?</h1></div>
+   <label for="prompt">그림 설명</label><textarea id="prompt" rows="4" placeholder="예: 낡은 소파에 앉아 기타를 연주하는 남자, 옆에는 작은 스탠드 조명">낡은 소파에 앉아 기타를 연주하는 남자. 옆에는 작은 스탠드 조명. 전신과 소파가 모두 보이는 구도, 단순하고 여백이 많은 배경.</textarea>
+   <div class="row"><label>화면 비율<select id="aspect"><option value="9:16">9:16 · 세로</option><option value="16:9">16:9 · 가로</option><option value="1:1">1:1 · 정사각형</option></select></label><label>생성 방식<select id="pipeline"><option value="art">그림 + AI 선화</option><option value="single">선화만 생성</option></select></label></div>
+   <button id="generate" class="primary full">그림 생성하기 <span>✦</span></button>
+   <p class="hint" id="callHint">이미지 생성 2회 · 이후 연출 변경은 추가 호출 없음</p>
+   <div class="row"><button id="uploadBtn" class="secondary">내 이미지 불러오기</button><button id="sampleBtn" class="secondary">예시 체험</button></div>
+   <input type="file" id="imageFile" accept="image/png,image/jpeg,image/webp" hidden>
+   <div class="source-strip" id="sourceStrip" hidden><img id="sourceThumb" alt="불러온 원본"><div><b id="sourceLabel">원본 이미지</b><span id="strokeInfo">선을 분석하는 중</span></div><button id="refine" class="quiet compact" title="현재 원본을 Gemini로 단순한 선화로 변환합니다. 이미지 생성 1회">AI 선화 정리</button></div>
+  </section>
+  <section>
+   <div class="section-heading"><span class="number">02</span><h2>선에 손맛을 더하세요</h2></div>
+   <label class="range-label" for="width">선 굵기 <output id="widthValue">2.6</output></label><input id="width" type="range" min="0.6" max="6" value="2.6" step="0.1">
+   <label class="range-label" for="pressure">필압 변화 <output id="pressureValue">70%</output></label><input id="pressure" type="range" min="0" max="100" value="70">
+   <label class="range-label" for="human">손의 리듬 <output id="humanValue">55%</output></label><input id="human" type="range" min="0" max="100" value="55">
+   <details><summary>선 추출 조절</summary><div class="detail-content"><label>원본 종류<select id="traceMode"><option value="auto">자동 판별</option><option value="line">선화 / 그림</option><option value="photo">사진 / 복잡한 그림</option></select></label><label class="range-label" for="detail">세부 묘사 <output id="detailValue">55%</output></label><input id="detail" type="range" min="10" max="90" value="55"><button id="retrace" class="secondary full">선 다시 추출 · 무료</button><p class="hint">사진을 바로 추출하면 잔선이 많을 수 있습니다. 영상처럼 간결한 그림은 ‘AI 선화 정리’를 사용하세요.</p></div></details>
+  </section>
+  <section>
+   <div class="section-heading"><span class="number">03</span><h2>궁금해지는 카메라</h2></div>
+   <div class="row"><label>드로잉 목표<select id="duration"><option value="20">20초</option><option value="30" selected>30초</option><option value="45">45초</option><option value="60">60초</option><option value="75">75초</option></select></label><label>카메라 연출<select id="camera"><option value="mystery">디테일에서 전체로</option><option value="gentle">부드럽게 따라가기</option><option value="fixed">고정 화면</option></select></label></div>
+   <label>그리기 시작 위치<select id="start"><option value="bottom">아래쪽부터 · 정체를 늦게 공개</option><option value="left">왼쪽부터</option><option value="top">위쪽부터</option></select></label>
+   <label class="range-label" for="background">밑그림 농도 <output id="backgroundValue">16%</output></label><input id="background" type="range" min="0" max="40" value="16">
+   <label class="check"><input type="checkbox" id="pen" checked> 그리는 펜촉 표시</label>
+   <p class="hint" id="timingNote">짧은 획이 한 번에 나타나지 않도록, 획 수에 따라 시간이 늘어날 수 있습니다.</p><div class="ending"><span>ENDING</span><p>전체 공개 4초 + 선화만 3초</p></div>
+  </section>
+ </aside>
+ <div class="workspace">
+  <div class="preview-head"><div><span class="eyebrow">THE DRAWING ROOM</span><h2>한 획씩, 하나의 작품으로.</h2></div><div class="segmented" aria-label="미리보기 모드"><button class="active" data-view="film">영상</button><button data-view="final">완성 선화</button><button data-view="source">원본</button></div></div>
+  <div class="stage" id="stage"><canvas id="preview" width="540" height="960" aria-label="드로잉 영상 미리보기"></canvas><div id="empty"><span class="empty-mark">╱</span><h2>첫 번째 선을 기다립니다.</h2><p>그림을 생성하거나 이미지를 불러오세요.<br>예시 체험은 API 키 없이 사용할 수 있습니다.</p><button id="emptySample" class="secondary">예시 영상 만들기</button></div><span class="stage-badge" id="stageBadge">9:16 · 30 FPS</span><span class="phase" id="phase">준비</span></div>
+  <div class="transport"><button id="play" class="play" aria-label="재생 / 일시정지" disabled>▶</button><div class="scrub"><input id="seek" type="range" min="0" max="37" step="0.01" value="0" aria-label="재생 위치"><div class="time-labels"><span id="time">00:00.0</span><span id="total">00:37.0</span></div></div><button id="restart" class="quiet" title="처음으로">↺</button></div>
+  <div class="timeline-labels"><span><i></i> 디테일 드로잉</span><span><i></i> 전체 공개 4초</span><span><i></i> 완성 선화 3초</span></div>
+  <div id="status" class="status" role="status" aria-live="polite">준비되었습니다. 그림부터 시작해 보세요.</div>
+  <progress id="progress" max="1" value="0" hidden></progress>
+  <div class="export-row"><div class="row"><label>영상 크기<select id="resolution"><option value="1080">1080p</option><option value="720">720p</option></select></label><label>프레임<select id="fps"><option value="30">30 fps</option><option value="24">24 fps</option><option value="18">18 fps</option></select></label></div><button id="export" class="primary" disabled>영상 저장</button><button id="cancel" class="secondary" hidden>작업 취소</button></div>
+  <div class="file-actions"><button id="saveProject" class="quiet" disabled>프로젝트 저장</button><button id="loadProject" class="quiet">프로젝트 열기</button><button id="savePNG" class="quiet" disabled>완성 PNG</button><button id="saveSVG" class="quiet" disabled>완성 SVG</button><input id="projectFile" type="file" accept=".linecinema,application/json" hidden><a id="downloadLink" hidden>영상 다시 다운로드</a></div>
+  <p class="footnote">키는 이 브라우저에만 저장됩니다. 영상은 이 기기에서 만들어집니다. 기본 출력은 무음입니다.</p>
+ </div>
+</main>
+<dialog id="settings"><form id="settingsForm"><div class="dialog-head"><h2>Gemini 연결</h2><button type="button" id="closeSettings" class="quiet" aria-label="닫기">✕</button></div><label>연결 방식<select id="provider"><option value="direct">API 키 직접 입력</option><option value="proxy">Cloudflare · 비밀번호</option></select></label><div id="directFields"><label>Gemini API 키<input id="apiKey" type="password" autocomplete="off" placeholder="AIza…"></label><label class="check"><input type="checkbox" id="remember" checked> 이 브라우저에 API 키 저장</label><p class="hint">로컬 저장은 암호화 보관이 아닙니다. 개인 기기에서만 사용하세요.</p><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio에서 키 발급</a></div><div id="proxyFields" hidden><label>Worker URL<input id="proxyUrl" type="url" placeholder="https://your-worker.workers.dev"></label><label>접속 비밀번호<input id="proxyPassword" type="password" autocomplete="off"></label><p class="hint">비밀번호는 저장하지 않습니다. ZIP의 cloudflare 폴더에 서버 코드와 연결 안내가 있습니다.</p></div><label>이미지 모델<input id="model" list="models" value="gemini-3.1-flash-image" spellcheck="false"></label><datalist id="models"><option value="gemini-3.1-flash-image"><option value="gemini-3.1-flash-lite-image"><option value="gemini-3-pro-image"><option value="gemini-2.5-flash-image"><option value="gemini-3.1-flash-image-preview"></datalist><p class="hint">사용 가능한 이미지 모델 ID로 변경할 수 있습니다. 생성 버튼을 누를 때만 API를 호출하며, 실패 시 자동 재시도하지 않습니다.</p><div class="row"><button type="button" id="forget" class="secondary">저장된 키 삭제</button><button class="primary" type="submit">설정 적용</button></div></form></dialog>
+<script type="module" src="./js/app.js"></script>
+</body></html>
