@@ -7,12 +7,13 @@ const SPEED_PROFILES=[
  {max:1,label:'균형 선화',summary:'1.0×에 맞춰 핵심 윤곽과 필요한 표정선을 균형 있게 주문합니다.',budget:'Use roughly 12-18 defining interior contours. Keep only contours needed to read pose, expression and important props.'},
  {max:1.25,label:'간결한 선화',summary:'1.25×에서 선이 몰리지 않도록 내부 묘사와 작은 소품을 줄입니다.',budget:'Use roughly 9-12 defining interior contours. Remove secondary folds, small accessories and repeated object seams.'},
  {max:1.5,label:'단순 선화',summary:'1.5×에서도 읽히도록 실루엣과 핵심 행동만 남깁니다.',budget:'Use roughly 6-9 defining interior contours. Prioritize silhouette, pose, one facial cue per subject and only indispensable props.'},
- {max:2,label:'최소 선화',summary:'2.0×의 빠른 재생을 위해 큰 실루엣과 행동을 설명하는 선만 주문합니다.',budget:'Use no more than about 4-6 defining interior contours. Keep large silhouettes and the single most important action cue; remove minor props and all decorative detail.'}
+ {max:2,label:'최소 선화',summary:'2.0×의 빠른 재생을 위해 큰 실루엣과 행동을 설명하는 선만 주문합니다.',budget:'Use no more than about 4-6 defining interior contours. Keep large silhouettes and the single most important action cue; remove minor props and all decorative detail.'},
+ {max:2.5,label:'릴스용 초간결 선화',summary:'2.5× 압축에서도 장면이 읽히도록 실루엣과 2–4개의 핵심 표현선만 주문합니다.',budget:'Use only about 2-4 defining interior contours in the entire composition. Keep the outer silhouettes, the primary action, and at most one essential facial or prop cue per subject. Remove every optional object and decorative line.'}
 ];
 
 export function speedProfile(value){
  const speed=Number(value);
- if(!Number.isFinite(speed)||speed<.5||speed>2)throw new Error('그리기 속도는 0.5×에서 2.0× 사이여야 합니다.');
+ if(!Number.isFinite(speed)||speed<.5||speed>2.5)throw new Error('그리기 속도는 0.5×에서 2.5× 사이여야 합니다.');
  return{speed,...SPEED_PROFILES.find(profile=>speed<=profile.max)};
 }
 

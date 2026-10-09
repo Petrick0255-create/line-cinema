@@ -5,7 +5,7 @@ const ease = t => { t = clamp(t); return t*t*t*(t*(t*6-15)+10); };
 const distance = (a, b) => Math.hypot(a[0]-b[0], a[1]-b[1]);
 
 export function makeScene(trace, settings) {
-  const speed = clamp(Number(settings.speed)||1,.5,2);
+  const speed = clamp(Number(settings.speed)||1,.5,2.5);
   const options = { ...settings, speed, requestedDuration: settings.duration }, route = continuousPath(trace, options.start, options.cleanup, true);
   const human = options.human / 100, b = route.bounds;
   // Spatial displacement is continuous at shared joints and crossings.
