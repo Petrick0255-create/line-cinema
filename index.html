@@ -6,15 +6,18 @@
   <title>J&B Line Cinema</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23ff794f'/%3E%3Cpath d='M8 23L24 8M9 24l6-2-4-4z' fill='none' stroke='%23151619' stroke-width='3'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./speed.css?v=0.3.5">
 </head>
 <body>
-<header><a class="brand" href="./"><span class="brand-icon">╱</span> J&B <strong>LINE CINEMA</strong><span class="version">03.4</span></a><button id="openSettings" class="quiet">연결 설정 <span id="connectionLabel">API 키 필요</span></button></header>
+<header><a class="brand" href="./"><span class="brand-icon">╱</span> J&B <strong>LINE CINEMA</strong><span class="version">03.5</span></a><button id="openSettings" class="quiet">연결 설정 <span id="connectionLabel">API 키 필요</span></button></header>
 <main>
  <aside>
   <section>
    <div class="section-heading"><span class="number">01</span><h1>어떤 그림을 그릴까요?</h1></div>
    <label for="prompt">그림 설명</label><textarea id="prompt" rows="4" placeholder="예: 낡은 소파에 앉아 기타를 연주하는 남자, 옆에는 작은 스탠드 조명">낡은 소파에 앉아 기타를 연주하는 남자. 옆에는 작은 스탠드 조명. 전신과 소파가 모두 보이는 구도, 단순하고 여백이 많은 배경.</textarea>
    <div class="row"><label>화면 비율<select id="aspect"><option value="9:16">9:16 · 세로</option><option value="16:9">16:9 · 가로</option><option value="1:1">1:1 · 정사각형</option></select></label><label>생성 방식<select id="pipeline"><option value="art">그림 + AI 선화</option><option value="single">선화만 생성</option></select></label></div>
+   <label>그리기 속도<select id="speed"><option value="0.5">0.5× · 아주 천천히</option><option value="0.75">0.75× · 천천히</option><option value="1" selected>1.0× · 보통</option><option value="1.25">1.25× · 조금 빠르게</option><option value="1.5">1.5× · 빠르게</option><option value="2">2.0× · 매우 빠르게</option></select></label>
+   <div class="speed-order"><span id="speedComplexity">균형 선화</span><p id="speedHint">1.0×에 맞춰 핵심 윤곽과 필요한 표정선을 균형 있게 주문합니다.</p></div>
    <button id="generate" class="primary full">그림 생성하기 <span>✦</span></button>
    <p class="hint" id="callHint">이미지 생성 2회 · 이후 연출 변경은 추가 호출 없음</p>
    <div class="row"><button id="uploadBtn" class="secondary">내 이미지 불러오기</button><button id="sampleBtn" class="secondary">예시 체험</button></div>
@@ -53,5 +56,5 @@
  </div>
 </main>
 <dialog id="settings"><form id="settingsForm"><div class="dialog-head"><h2>Gemini 연결</h2><button type="button" id="closeSettings" class="quiet" aria-label="닫기">✕</button></div><label>연결 방식<select id="provider"><option value="direct">API 키 직접 입력</option><option value="proxy">Cloudflare · 비밀번호</option></select></label><div id="directFields"><label>Gemini API 키<input id="apiKey" type="password" autocomplete="off" placeholder="AIza…"></label><label class="check"><input type="checkbox" id="remember" checked> 이 브라우저에 API 키 저장</label><p class="hint">로컬 저장은 암호화 보관이 아닙니다. 개인 기기에서만 사용하세요.</p><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio에서 키 발급</a></div><div id="proxyFields" hidden><label>Worker URL<input id="proxyUrl" type="url" placeholder="https://your-worker.workers.dev"></label><label>접속 비밀번호<input id="proxyPassword" type="password" autocomplete="off"></label><p class="hint">비밀번호는 저장하지 않습니다. ZIP의 cloudflare 폴더에 서버 코드와 연결 안내가 있습니다.</p></div><label>이미지 모델<input id="model" list="models" value="gemini-3.1-flash-image" spellcheck="false"></label><datalist id="models"><option value="gemini-3.1-flash-image"><option value="gemini-3.1-flash-lite-image"><option value="gemini-3-pro-image"><option value="gemini-2.5-flash-image"><option value="gemini-3.1-flash-image-preview"></datalist><p class="hint">사용 가능한 이미지 모델 ID로 변경할 수 있습니다. 생성 버튼을 누를 때만 API를 호출하며, 실패 시 자동 재시도하지 않습니다.</p><div class="row"><button type="button" id="forget" class="secondary">저장된 키 삭제</button><button class="primary" type="submit">설정 적용</button></div></form></dialog>
-<script type="module" src="./js/app.js?v=0.3.4"></script>
+<script type="module" src="./js/app.js?v=0.3.5"></script>
 </body></html>

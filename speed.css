@@ -1,0 +1,21 @@
+.speed-order {
+  margin: 9px 0 14px;
+  padding: 10px 12px;
+  border: 1px solid #3b3e46;
+  border-radius: 7px;
+  background: #202227;
+}
+
+.speed-order span {
+  display: block;
+  color: var(--accent);
+  font-size: .72rem;
+  font-weight: 650;
+}
+
+.speed-order p {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: .72rem;
+  line-height: 1.55;
+}

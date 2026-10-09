@@ -1,5 +1,25 @@
 export const IMAGE_PROMPT=`Create one refined reference image for a pen-drawing film. Subject: {SUBJECT}. The entire subject must fit in the frame with a generous white margin. Use a clear, readable silhouette and quiet off-white background. Carefully compose the main objects, limbs, clothing folds and props. Soft monochrome editorial photograph aesthetic, clear contours, no clutter or dense textures. No text, letters, labels, frames, collage, signature, or multiple panels. Return an image.`;
 export const LINE_PROMPT=`Transform the supplied reference into a minimalist black ink contour drawing on pure white. Preserve EXACT composition, position, scale, proportions, pose and silhouette of every main object in the input. Do not crop, zoom, rearrange, add or remove main objects. Use a deliberately sparse drawing: only the outer silhouette and a very few defining interior contours. Omit skin texture, tiny fabric wrinkles, hair strands, repeated furniture seams, background texture and decorative micro-details. Leave large areas completely empty. Draw only thoughtful essential contours and a few expressive interior lines, using ONE genuinely continuous unbroken line, as if a single pen never leaves the paper. Every object and interior detail must belong to the same connected line. Strongly prefer connections along existing contact points, shared ground contours or furniture. Preserve all main subjects. If they cannot be connected naturally, use the fewest short unobtrusive connecting strokes instead of losing parts of the picture. Avoid conspicuous straight lines from one person to another when a route near the existing contours is available. Trace every line segment exactly ONCE. NO retracing, NO backtracking, NO overdraw along an existing stroke. Isolated crossings are allowed. Design one open path with exactly two endpoints; use new connecting contours for internal details, never dead-end branches or T junctions. Simplify secondary details when necessary to achieve a genuine single stroke; avoid disconnected outlines, isolated dots, separate eye marks or floating strokes. Keep generous white negative spaces and mostly thin black ink 2-4 pixels at 1024 resolution. NO shading, NO grayscale washes, NO hatching, NO fill areas, NO color, NO texture, NO text or signature. Eyes/hands should remain legible with very few lines. One animated nib must be able to follow the entire drawing without a single pen lift and without revisiting any line segment. Return only the line drawing image at the same aspect ratio.`;
+
+const SPEED_PROFILES=[
+ {max:.5,label:'풍부한 선화',summary:'0.5×의 느린 전개에 맞춰 표정·손·핵심 소품의 표현선을 더 허용합니다.',budget:'Allow roughly 24-32 short defining interior contours. Fine expression, hand, clothing and key prop contours are allowed, but still omit texture and repeated marks.'},
+ {max:.75,label:'여유 있는 선화',summary:'0.75×에 맞춰 주요 표정과 소품을 살리되 반복 묘사는 줄입니다.',budget:'Allow roughly 18-24 defining interior contours. Preserve expressive faces, hands and important props, while omitting repeated texture.'},
+ {max:1,label:'균형 선화',summary:'1.0×에 맞춰 핵심 윤곽과 필요한 표정선을 균형 있게 주문합니다.',budget:'Use roughly 12-18 defining interior contours. Keep only contours needed to read pose, expression and important props.'},
+ {max:1.25,label:'간결한 선화',summary:'1.25×에서 선이 몰리지 않도록 내부 묘사와 작은 소품을 줄입니다.',budget:'Use roughly 9-12 defining interior contours. Remove secondary folds, small accessories and repeated object seams.'},
+ {max:1.5,label:'단순 선화',summary:'1.5×에서도 읽히도록 실루엣과 핵심 행동만 남깁니다.',budget:'Use roughly 6-9 defining interior contours. Prioritize silhouette, pose, one facial cue per subject and only indispensable props.'},
+ {max:2,label:'최소 선화',summary:'2.0×의 빠른 재생을 위해 큰 실루엣과 행동을 설명하는 선만 주문합니다.',budget:'Use no more than about 4-6 defining interior contours. Keep large silhouettes and the single most important action cue; remove minor props and all decorative detail.'}
+];
+
+export function speedProfile(value){
+ const speed=Number(value);
+ if(!Number.isFinite(speed)||speed<.5||speed>2)throw new Error('그리기 속도는 0.5×에서 2.0× 사이여야 합니다.');
+ return{speed,...SPEED_PROFILES.find(profile=>speed<=profile.max)};
+}
+
+export function promptForSpeed(prompt,value){
+ const profile=speedProfile(value);
+ return`${prompt}\n\nDRAWING SPEED AND COMPLEXITY ORDER: The animation will be rendered at ${profile.speed.toFixed(2)}x drawing speed. ${profile.budget} Faster playback must remain calm and readable: do not compensate with denser marks, long detours, or extra background objects. This speed-specific complexity order overrides any conflicting request for detail, while all explicitly requested main subjects must remain recognizable.`;
+}
 // generateContent responseFormat uses protobuf enums; legacy imageConfig
 // accepts display strings. Do not reuse one configuration for both formats.
 // https://ai.google.dev/api/generate-content#ImageResponseFormat

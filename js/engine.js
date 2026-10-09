@@ -5,7 +5,8 @@ const ease = t => { t = clamp(t); return t*t*t*(t*(t*6-15)+10); };
 const distance = (a, b) => Math.hypot(a[0]-b[0], a[1]-b[1]);
 
 export function makeScene(trace, settings) {
-  const options = { ...settings, requestedDuration: settings.duration }, route = continuousPath(trace, options.start, options.cleanup, true);
+  const speed = clamp(Number(settings.speed)||1,.5,2);
+  const options = { ...settings, speed, requestedDuration: settings.duration }, route = continuousPath(trace, options.start, options.cleanup, true);
   const human = options.human / 100, b = route.bounds;
   // Spatial displacement is continuous at shared joints and crossings.
   const points = route.points.map(([x,y]) => [clamp(x + human*.15*Math.sin(x*.07+y*.035),0,trace.width), clamp(y + human*.15*Math.sin(y*.08-x*.04),0,trace.height)]);
@@ -19,7 +20,7 @@ export function makeScene(trace, settings) {
   }
   // Limit travel per output frame, rather than introducing a pause per piece.
   const maxSpeed = Math.max(12,Math.max(b.w,b.h)*.4) * (options.fps||30)/30;
-  options.duration = Math.max(options.duration, Math.ceil(weight/maxSpeed));
+  options.duration = Math.max(options.duration/speed, Math.ceil(weight/(maxSpeed*speed)));
   const ws = points.map(([x,y]) => options.width * mix(1,.7+.18*Math.sin(x*.037+y*.029)+.1*Math.sin(x*.103-y*.071),options.pressure/100));
   // Only the very first contact tapers. Internal cache boundaries never taper.
   // Internal chunk boundaries and crossings keep the same pressure.
