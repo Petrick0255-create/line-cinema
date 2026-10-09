@@ -1,5 +1,5 @@
-import{makeScene,Renderer,sceneSVG,clamp}from'./engine.js?v=0.3.5';
-import{generateImage,IMAGE_PROMPT,LINE_PROMPT,promptForSpeed,speedProfile}from'./gemini.js?v=0.3.5';
+import{makeScene,Renderer,sceneSVG,clamp}from'./engine.js?v=0.3.6';
+import{generateImage,IMAGE_PROMPT,LINE_PROMPT,promptForSpeed,speedProfile}from'./gemini.js?v=0.3.6';
 import{exportVideo,dimensions}from'./exporter.js?v=0.3.4';
 import{eraseContourAt}from'./erase-line.js?v=0.3.3';
 const $=id=>document.getElementById(id),version=1;

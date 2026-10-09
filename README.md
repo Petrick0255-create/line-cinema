@@ -1,8 +1,8 @@
-# J&B Line Cinema 0.3.5 · One stroke, no retracing
+# J&B Line Cinema 0.3.6 · One stroke, no retracing
 
 Gemini로 만든 그림 또는 직접 올린 이미지로 펜을 떼거나 되짚지 않는 한붓 드로잉 아트 영상을 만드는 **빌드 없는 정적 웹앱**입니다. GitHub Pages에 파일을 올리면 실행됩니다. React, npm 설치, CDN, 별도 서버가 필요하지 않습니다. 이미지 생성 시에만 Gemini 서버와 통신합니다.
 
-## 0.3.5 · 속도별 선화 복잡도 주문
+## 0.3.6 · 속도별 선화 복잡도 주문
 
 그림 생성 전에 **그리기 속도 0.5×–2.5×**를 선택할 수 있습니다. 선택값은 두 곳에 동시에 반영됩니다.
 
